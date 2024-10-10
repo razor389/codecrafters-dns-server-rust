@@ -22,19 +22,19 @@ async fn main() -> Result<()> {
         // Receive data from the socket
         let (amt, src) = udp_socket.recv_from(&mut buffer.buf).await?;
         let packet = DnsPacket::from_buffer(&mut buffer)?;
-        println!("{:#?}", packet.header);
+        println!("header: {:#?}", packet.header);
 
         for q in packet.questions {
-            println!("{:#?}", q);
+            println!("questions: {:#?}", q);
         }
         for rec in packet.answers {
-            println!("{:#?}", rec);
+            println!("answers: {:#?}", rec);
         }
         for rec in packet.authorities {
-            println!("{:#?}", rec);
+            println!("authorities: {:#?}", rec);
         }
         for rec in packet.resources {
-            println!("{:#?}", rec);
+            println!("resources: {:#?}", rec);
         }
 
         if amt> 0 {
