@@ -1,8 +1,11 @@
 use core::str;
-use std::io;
 use tokio::net::UdpSocket;
+use anyhow::Result;
+mod header;
+mod byte_packet_buffer;
+
 #[tokio::main]
-async fn main() -> io::Result<()> {
+async fn main() -> Result<()> {
     println!("Logs from your program will appear here!");
 
     // Bind to the UDP socket at the specified address (port 2053)
@@ -19,7 +22,7 @@ async fn main() -> io::Result<()> {
                 println!("Received {} bytes from {}: {}", amt, src, data);
             } else {
                 // Print the raw bytes if it's not valid UTF-8
-                println!("Received {} bytes from {}: {:?}", amt, src, &buf[..amt]);
+                println!("Received {} bytes from {}: {:02X?}", amt, src, &buf[..amt]);
             }
             // Redeclare `buf` as slice of the received data and send reverse data back to the origin
             let buf = &mut buf[..amt];
