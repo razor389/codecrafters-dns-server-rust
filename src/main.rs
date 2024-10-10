@@ -1,8 +1,13 @@
 use core::str;
+use byte_packet_buffer::BytePacketBuffer;
+use packet::DnsPacket;
 use tokio::net::UdpSocket;
 use anyhow::Result;
 mod header;
 mod byte_packet_buffer;
+mod packet;
+mod record;
+mod query;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -11,25 +16,29 @@ async fn main() -> Result<()> {
     // Bind to the UDP socket at the specified address (port 2053)
     let udp_socket = UdpSocket::bind("127.0.0.1:2053").await.expect("Failed to bind to address");
 
-    let mut buf = [0; 512];
+    let mut buffer = BytePacketBuffer::new();
 
     loop {
         // Receive data from the socket
-        let (amt, src) = udp_socket.recv_from(&mut buf).await?;
+        let (amt, src) = udp_socket.recv_from(&mut buffer.buf).await?;
+        let packet = DnsPacket::from_buffer(&mut buffer)?;
+        println!("{:#?}", packet.header);
+
+        for q in packet.questions {
+            println!("{:#?}", q);
+        }
+        for rec in packet.answers {
+            println!("{:#?}", rec);
+        }
+        for rec in packet.authorities {
+            println!("{:#?}", rec);
+        }
+        for rec in packet.resources {
+            println!("{:#?}", rec);
+        }
+
         if amt> 0 {
-            // Convert the received buffer to a string, if it's valid UTF-8
-            if let Ok(data) = str::from_utf8(&buf[..amt]) {
-                println!("Received {} bytes from {}: {}", amt, src, data);
-            } else {
-                // Print the raw bytes if it's not valid UTF-8
-                println!("Received {} bytes from {}: {:02X?}", amt, src, &buf[..amt]);
-            }
-            // Redeclare `buf` as slice of the received data and send reverse data back to the origin
-            let buf = &mut buf[..amt];
-            buf.reverse();
-            
-            // Send the reversed data back to the source
-            udp_socket.send_to(buf, &src).await?;
+            udp_socket.send_to(&buffer.buf, &src).await?;
             
             println!("Received data from {} and sent response", src);
         }

@@ -21,7 +21,7 @@ impl BytePacketBuffer {
     }
 
     /// Step the buffer position forward a specific number of steps
-    fn step(&mut self, steps: usize) -> Result<()> {
+    pub fn step(&mut self, steps: usize) -> Result<()> {
         self.pos += steps;
         Ok(())
     }
@@ -65,7 +65,7 @@ impl BytePacketBuffer {
     }
 
     /// Read four bytes, stepping four steps forward
-    fn read_u32(&mut self) -> Result<u32> {
+    pub fn read_u32(&mut self) -> Result<u32> {
         let res = ((self.read()? as u32) << 24)
             | ((self.read()? as u32) << 16)
             | ((self.read()? as u32) << 8)
@@ -74,7 +74,7 @@ impl BytePacketBuffer {
     }
 
     /// Read a qname
-    fn read_qname(&mut self, outstr: &mut String) -> Result<()> {
+    pub fn read_qname(&mut self, outstr: &mut String) -> Result<()> {
         let mut pos = self.pos();
         let mut jumped = false;
         let max_jumps = 5;
