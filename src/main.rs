@@ -46,17 +46,22 @@ async fn main() -> Result<()> {
             let qtype = QueryType::A;
             let addr = Ipv4Addr::new(8, 8, 8, 8);
 
-            response_packet.header.id = 1234;
+            response_packet.header.id = packet.header.id;
             response_packet.header.response = true;
-            response_packet.header.opcode = 0;
+            response_packet.header.opcode = packet.header.opcode;
             response_packet.header.authoritative_answer = false;
             response_packet.header.truncated_message = false;
-            response_packet.header.recursion_desired = false;
+            response_packet.header.recursion_desired = packet.header.recursion_desired;
             response_packet.header.recursion_available = false;
             response_packet.header.z = false;
             response_packet.header.checking_disabled = false;
             response_packet.header.authed_data = false;
-            response_packet.header.rescode = ResultCode::NOERROR;
+            if response_packet.header.opcode == 0{
+                response_packet.header.rescode = ResultCode::NOERROR;
+            }
+            else{
+                response_packet.header.rescode = ResultCode::NOTIMP;
+            }
             response_packet.header.questions = 0;
             response_packet.header.answers = 0;
             response_packet.header.authoritative_entries = 0;
