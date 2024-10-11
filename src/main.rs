@@ -40,8 +40,6 @@ fn main() -> Result<()> {
         // }
         if amt> 0 {
             let mut response_packet = DnsPacket::new();
-            let incoming_question = packet.questions.pop().unwrap();
-            let qname = incoming_question.name;
             let qtype = QueryType::A;
             let addr = Ipv4Addr::new(8, 8, 8, 8);
 
@@ -65,8 +63,11 @@ fn main() -> Result<()> {
             response_packet.header.answers = 0;
             response_packet.header.authoritative_entries = 0;
             response_packet.header.resource_entries = 0;
-            response_packet.questions.push(DnsQuestion::new(qname.to_string(), qtype));
-            response_packet.answers.push(DnsRecord::new_a(qname.to_string(), addr, 60));
+            for question in packet.questions{
+                let qname = question.name;
+                response_packet.questions.push(DnsQuestion::new(qname.to_string(), qtype));
+                response_packet.answers.push(DnsRecord::new_a(qname.to_string(), addr, 60));
+            }
 
             let mut res_buffer = BytePacketBuffer::new();
             response_packet.write(&mut res_buffer)?;
