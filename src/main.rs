@@ -39,7 +39,7 @@ async fn main() -> Result<()> {
         // for rec in packet.resources {
         //     println!("resources: {:#?}", rec);
         // }
-        if amt> 0 && packet.header.id != 0 {
+        if amt> 0 {
             let mut response_packet = DnsPacket::new();
             let qname = "codecrafters.io";
             let qtype = QueryType::A;
