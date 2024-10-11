@@ -1,4 +1,4 @@
-use std::net::{Ipv4Addr, UdpSocket};
+use std::{env, net::{Ipv4Addr, SocketAddr, UdpSocket}};
 use byte_packet_buffer::BytePacketBuffer;
 use header::ResultCode;
 use packet::DnsPacket;
@@ -14,6 +14,14 @@ mod query;
 fn main() -> Result<()> {
     println!("Logs from your program will appear here!");
 
+     // Parse command line arguments
+     let args: Vec<String> = env::args().collect();
+     let resolver_addr = if args.len() == 3 && args[1] == "--resolver" {
+         args[2].parse::<SocketAddr>().expect("Invalid resolver address")
+     } else {
+         panic!("Usage: ./your_server --resolver <ip:port>");
+     };
+
     // Bind to the UDP socket at the specified address (port 2053)
     let udp_socket = UdpSocket::bind("127.0.0.1:2053").expect("Failed to bind to address");
 
@@ -23,7 +31,7 @@ fn main() -> Result<()> {
 
         // Receive data from the socket
         let (amt, src) = udp_socket.recv_from(&mut buffer.buf)?;
-        let mut packet = DnsPacket::from_buffer(&mut buffer)?;
+        let packet = DnsPacket::from_buffer(&mut buffer)?;
         //println!("header: {:#?}", packet.header);
 
         // for q in packet.questions {
