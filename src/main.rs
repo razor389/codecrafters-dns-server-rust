@@ -1,10 +1,11 @@
-use std::{env, net::{Ipv4Addr, SocketAddr, UdpSocket}};
+use std::net::{Ipv4Addr, SocketAddr, UdpSocket};
 use byte_packet_buffer::BytePacketBuffer;
 use header::ResultCode;
 use packet::DnsPacket;
 use query::{DnsQuestion, QueryType};
-use record::DnsRecord;
 use anyhow::Result;
+use std::env;
+
 mod header;
 mod byte_packet_buffer;
 mod packet;
@@ -14,76 +15,83 @@ mod query;
 fn main() -> Result<()> {
     println!("Logs from your program will appear here!");
 
-     // Parse command line arguments
-     let args: Vec<String> = env::args().collect();
-     let resolver_addr = if args.len() == 3 && args[1] == "--resolver" {
-         args[2].parse::<SocketAddr>().expect("Invalid resolver address")
-     } else {
-         panic!("Usage: ./your_server --resolver <ip:port>");
-     };
+    // Parse command line arguments
+    let args: Vec<String> = env::args().collect();
+    let resolver_addr = if args.len() == 3 && args[1] == "--resolver" {
+        args[2].parse::<SocketAddr>().expect("Invalid resolver address")
+    } else {
+        panic!("Usage: ./your_server --resolver <ip:port>");
+    };
 
-    // Bind to the UDP socket at the specified address (port 2053)
+    // Bind to a UDP socket at port 2053
     let udp_socket = UdpSocket::bind("127.0.0.1:2053").expect("Failed to bind to address");
 
-    
     loop {
         let mut buffer = BytePacketBuffer::new();
 
-        // Receive data from the socket
+        // Receive DNS query from the client
         let (amt, src) = udp_socket.recv_from(&mut buffer.buf)?;
-        let packet = DnsPacket::from_buffer(&mut buffer)?;
-        //println!("header: {:#?}", packet.header);
 
-        // for q in packet.questions {
-        //     println!("questions: {:#?}", q);
-        // }
-        // for rec in packet.answers {
-        //     println!("answers: {:#?}", rec);
-        // }
-        // for rec in packet.authorities {
-        //     println!("authorities: {:#?}", rec);
-        // }
-        // for rec in packet.resources {
-        //     println!("resources: {:#?}", rec);
-        // }
-        if amt> 0 {
-            let mut response_packet = DnsPacket::new();
-            let qtype = QueryType::A;
-            let addr = Ipv4Addr::new(8, 8, 8, 8);
+        if amt > 0 {
+            // Parse the incoming packet
+            let packet = DnsPacket::from_buffer(&mut buffer)?;
 
-            response_packet.header.id = packet.header.id;
-            response_packet.header.response = true;
-            response_packet.header.opcode = packet.header.opcode;
-            response_packet.header.authoritative_answer = false;
-            response_packet.header.truncated_message = false;
-            response_packet.header.recursion_desired = packet.header.recursion_desired;
-            response_packet.header.recursion_available = false;
-            response_packet.header.z = false;
-            response_packet.header.checking_disabled = false;
-            response_packet.header.authed_data = false;
-            if response_packet.header.opcode == 0{
-                response_packet.header.rescode = ResultCode::NOERROR;
+            if !packet.questions.is_empty() {
+                let mut response_packet = DnsPacket::new();
+                response_packet.header.id = packet.header.id;
+                response_packet.header.response = true;
+                response_packet.header.opcode = packet.header.opcode;
+                response_packet.header.authoritative_answer = false;
+                response_packet.header.truncated_message = false;
+                response_packet.header.recursion_desired = packet.header.recursion_desired;
+                response_packet.header.recursion_available = true;
+                response_packet.header.z = false;
+                response_packet.header.checking_disabled = packet.header.checking_disabled;
+                response_packet.header.authed_data = packet.header.authed_data;
+
+                // Loop through all the questions
+                for question in &packet.questions {
+                    println!("Forwarding question: {:#?} to resolver: {}", question, resolver_addr);
+
+                    // Forward each question individually
+                    let mut resolver_packet = DnsPacket::new();
+                    resolver_packet.questions.push(question.clone());
+                    resolver_packet.header.id = packet.header.id; // Forward with the same ID
+
+                    // Write the resolver packet to the buffer
+                    let mut request_buffer = BytePacketBuffer::new();
+                    resolver_packet.write(&mut request_buffer)?;
+
+                    // Send the question to the resolver
+                    let resolver_socket = UdpSocket::bind("0.0.0.0:0")?; // Ephemeral port
+                    resolver_socket.send_to(&request_buffer.buf[0..request_buffer.pos], resolver_addr)?;
+
+                    // Wait for the response from the resolver
+                    let mut resolver_response_buffer = BytePacketBuffer::new();
+                    let (response_size, _) = resolver_socket.recv_from(&mut resolver_response_buffer.buf)?;
+
+                    // Parse the resolver's response
+                    let resolver_response_packet = DnsPacket::from_buffer(&mut resolver_response_buffer)?;
+
+                    // Copy answers, authorities, and additional records from resolver's response to our response
+                    response_packet.answers.extend(resolver_response_packet.answers);
+                    response_packet.authorities.extend(resolver_response_packet.authorities);
+                    response_packet.resources.extend(resolver_response_packet.resources);
+                }
+
+                // Update header with the number of responses
+                response_packet.header.questions = packet.questions.len() as u16;
+                response_packet.header.answers = response_packet.answers.len() as u16;
+                response_packet.header.authoritative_entries = response_packet.authorities.len() as u16;
+                response_packet.header.resource_entries = response_packet.resources.len() as u16;
+
+                // Write the response back to the client
+                let mut response_buffer = BytePacketBuffer::new();
+                response_packet.write(&mut response_buffer)?;
+
+                println!("Sending response back to client at {}", src);
+                udp_socket.send_to(&response_buffer.buf[0..response_buffer.pos], src)?;
             }
-            else{
-                response_packet.header.rescode = ResultCode::NOTIMP;
-            }
-            response_packet.header.questions = 0;
-            response_packet.header.answers = 0;
-            response_packet.header.authoritative_entries = 0;
-            response_packet.header.resource_entries = 0;
-            for question in packet.questions{
-                let qname = question.name;
-                response_packet.questions.push(DnsQuestion::new(qname.to_string(), qtype));
-                response_packet.answers.push(DnsRecord::new_a(qname.to_string(), addr, 60));
-            }
-
-            let mut res_buffer = BytePacketBuffer::new();
-            response_packet.write(&mut res_buffer)?;
-            println!("response header: {:#?}", response_packet.header);
-
-            udp_socket.send_to(&res_buffer.buf[0..res_buffer.pos], &src)?;
-            
-            println!("Received data from {} and sent response", src);
         }
     }
 }
