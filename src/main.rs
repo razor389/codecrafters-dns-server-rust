@@ -71,7 +71,7 @@ async fn main() -> Result<()> {
 
             let mut res_buffer = BytePacketBuffer::new();
             response_packet.write(&mut res_buffer)?;
-            println!("{:#?}", response_packet.header);
+            println!("response header: {:#?}", response_packet.header);
 
             udp_socket.send_to(&res_buffer.buf[0..res_buffer.pos], &src).await?;
             
