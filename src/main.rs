@@ -1,10 +1,9 @@
-use std::net::Ipv4Addr;
+use std::net::{Ipv4Addr, UdpSocket};
 use byte_packet_buffer::BytePacketBuffer;
 use header::ResultCode;
 use packet::DnsPacket;
 use query::{DnsQuestion, QueryType};
 use record::DnsRecord;
-use tokio::net::UdpSocket;
 use anyhow::Result;
 mod header;
 mod byte_packet_buffer;
@@ -12,18 +11,17 @@ mod packet;
 mod record;
 mod query;
 
-#[tokio::main]
-async fn main() -> Result<()> {
+fn main() -> Result<()> {
     println!("Logs from your program will appear here!");
 
     // Bind to the UDP socket at the specified address (port 2053)
-    let udp_socket = UdpSocket::bind("127.0.0.1:2053").await.expect("Failed to bind to address");
+    let udp_socket = UdpSocket::bind("127.0.0.1:2053").expect("Failed to bind to address");
 
     let mut buffer = BytePacketBuffer::new();
 
     loop {
         // Receive data from the socket
-        let (amt, src) = udp_socket.recv_from(&mut buffer.buf).await?;
+        let (amt, src) = udp_socket.recv_from(&mut buffer.buf)?;
         let packet = DnsPacket::from_buffer(&mut buffer)?;
         println!("header: {:#?}", packet.header);
 
@@ -72,7 +70,7 @@ async fn main() -> Result<()> {
             response_packet.write(&mut res_buffer)?;
             println!("response header: {:#?}", response_packet.header);
 
-            udp_socket.send_to(&res_buffer.buf[0..res_buffer.pos], &src).await?;
+            udp_socket.send_to(&res_buffer.buf[0..res_buffer.pos], &src)?;
             
             println!("Received data from {} and sent response", src);
         }
