@@ -60,10 +60,10 @@ impl BytePacketBuffer {
 
     /// Read two bytes, stepping two steps forward
     pub fn read_u16(&mut self) -> Result<u16> {
-        println!("Buffer at position {}: {:02X?}", self.pos, &self.buf[self.pos..self.pos + 2]);
+        //println!("Buffer at position {}: {:02X?}", self.pos, &self.buf[self.pos..self.pos + 2]);
 
         let res = ((self.read()? as u16) << 8) | (self.read()? as u16);
-        println!("Read u16: {:04X} (decimal: {})", res, res);
+        //println!("Read u16: {:04X} (decimal: {})", res, res);
         Ok(res)
     }
 
