@@ -1,4 +1,3 @@
-use core::str;
 use std::net::Ipv4Addr;
 use byte_packet_buffer::BytePacketBuffer;
 use header::ResultCode;
@@ -28,18 +27,18 @@ async fn main() -> Result<()> {
         let packet = DnsPacket::from_buffer(&mut buffer)?;
         println!("header: {:#?}", packet.header);
 
-        for q in packet.questions {
-            println!("questions: {:#?}", q);
-        }
-        for rec in packet.answers {
-            println!("answers: {:#?}", rec);
-        }
-        for rec in packet.authorities {
-            println!("authorities: {:#?}", rec);
-        }
-        for rec in packet.resources {
-            println!("resources: {:#?}", rec);
-        }
+        // for q in packet.questions {
+        //     println!("questions: {:#?}", q);
+        // }
+        // for rec in packet.answers {
+        //     println!("answers: {:#?}", rec);
+        // }
+        // for rec in packet.authorities {
+        //     println!("authorities: {:#?}", rec);
+        // }
+        // for rec in packet.resources {
+        //     println!("resources: {:#?}", rec);
+        // }
         if amt> 0 && packet.header.id != 0 {
             let mut response_packet = DnsPacket::new();
             let qname = "codecrafters.io";
@@ -67,7 +66,7 @@ async fn main() -> Result<()> {
             response_packet.header.authoritative_entries = 0;
             response_packet.header.resource_entries = 0;
             response_packet.questions.push(DnsQuestion::new(qname.to_string(), qtype));
-            response_packet.answers.push(DnsRecord::new_A(qname.to_string(), addr, 60));
+            response_packet.answers.push(DnsRecord::new_a(qname.to_string(), addr, 60));
 
             let mut res_buffer = BytePacketBuffer::new();
             response_packet.write(&mut res_buffer)?;

@@ -21,7 +21,7 @@ pub enum DnsRecord {
 
 impl DnsRecord {
     
-    pub fn new_A(domain: String, addr: Ipv4Addr, ttl: u32)-> Self{
+    pub fn new_a(domain: String, addr: Ipv4Addr, ttl: u32)-> Self{
         DnsRecord::A { domain: domain, addr: addr, ttl: ttl }
     }
 
