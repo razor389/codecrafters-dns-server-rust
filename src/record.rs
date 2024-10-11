@@ -20,6 +20,11 @@ pub enum DnsRecord {
 }
 
 impl DnsRecord {
+    
+    pub fn new_A(domain: String, addr: Ipv4Addr, ttl: u32)-> Self{
+        DnsRecord::A { domain: domain, addr: addr, ttl: ttl }
+    }
+
     pub fn read(buffer: &mut BytePacketBuffer) -> Result<DnsRecord> {
         let mut domain = String::new();
         buffer.read_qname(&mut domain)?;

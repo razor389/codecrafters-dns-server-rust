@@ -1,8 +1,10 @@
 use core::str;
+use std::net::Ipv4Addr;
 use byte_packet_buffer::BytePacketBuffer;
 use header::ResultCode;
 use packet::DnsPacket;
 use query::{DnsQuestion, QueryType};
+use record::DnsRecord;
 use tokio::net::UdpSocket;
 use anyhow::Result;
 mod header;
@@ -42,6 +44,7 @@ async fn main() -> Result<()> {
             let mut response_packet = DnsPacket::new();
             let qname = "codecrafters.io";
             let qtype = QueryType::A;
+            let addr = Ipv4Addr::new(8, 8, 8, 8);
 
             response_packet.header.id = 1234;
             response_packet.header.response = true;
@@ -59,7 +62,8 @@ async fn main() -> Result<()> {
             response_packet.header.authoritative_entries = 0;
             response_packet.header.resource_entries = 0;
             response_packet.questions.push(DnsQuestion::new(qname.to_string(), qtype));
-            
+            response_packet.answers.push(DnsRecord::new_A(qname.to_string(), addr, 60));
+
             let mut res_buffer = BytePacketBuffer::new();
             response_packet.write(&mut res_buffer)?;
             println!("{:#?}", response_packet.header);
