@@ -40,7 +40,12 @@ fn main() -> Result<()> {
                 let mut response_packet = DnsPacket::new();
                 response_packet.header.id = packet.header.id;
                 response_packet.header.response = true;
-                response_packet.header.opcode = packet.header.opcode;
+                if response_packet.header.opcode == 0{
+                    response_packet.header.rescode = ResultCode::NOERROR;
+                }
+                else{
+                    response_packet.header.rescode = ResultCode::NOTIMP;
+                }
                 response_packet.header.authoritative_answer = false;
                 response_packet.header.truncated_message = false;
                 response_packet.header.recursion_desired = packet.header.recursion_desired;
