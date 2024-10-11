@@ -36,26 +36,25 @@ fn main() -> Result<()> {
             // Parse the incoming packet
             let packet = DnsPacket::from_buffer(&mut buffer)?;
 
-            if !packet.questions.is_empty() {
-                let mut response_packet = DnsPacket::new();
-                response_packet.header.id = packet.header.id;
-                response_packet.header.response = true;
-                if response_packet.header.opcode == 0{
-                    response_packet.header.rescode = ResultCode::NOERROR;
-                }
-                else{
-                    response_packet.header.rescode = ResultCode::NOTIMP;
-                }
-                response_packet.header.authoritative_answer = false;
-                response_packet.header.truncated_message = false;
-                response_packet.header.recursion_desired = packet.header.recursion_desired;
-                response_packet.header.recursion_available = true;
-                response_packet.header.z = false;
-                response_packet.header.checking_disabled = packet.header.checking_disabled;
-                response_packet.header.authed_data = packet.header.authed_data;
+            // Prepare the response packet
+            let mut response_packet = DnsPacket::new();
+            response_packet.header.id = packet.header.id;
+            response_packet.header.response = true;
+            response_packet.header.opcode = packet.header.opcode;
+            response_packet.header.authoritative_answer = false;
+            response_packet.header.truncated_message = false;
+            response_packet.header.recursion_desired = packet.header.recursion_desired;
+            response_packet.header.recursion_available = true;
+            response_packet.header.z = false;
+            response_packet.header.checking_disabled = packet.header.checking_disabled;
+            response_packet.header.authed_data = packet.header.authed_data;
 
-                // Loop through all the questions
-                println!("questions: {:#?}", &packet.questions);
+            // Check the opcode in the incoming query
+            if packet.header.opcode != 0 {
+                // Return NOTIMP (Not Implemented) for unsupported opcodes
+                response_packet.header.rescode = ResultCode::NOTIMP;
+            } else if !packet.questions.is_empty() {
+                // Process the questions only for standard queries (Opcode 0)
                 for question in &packet.questions {
                     println!("Forwarding question: {:#?} to resolver: {}", question, resolver_addr);
 
@@ -79,7 +78,7 @@ fn main() -> Result<()> {
                     // Parse the resolver's response
                     let resolver_response_packet = DnsPacket::from_buffer(&mut resolver_response_buffer)?;
 
-                    // Copy answers, authorities, and additional records from resolver's response to our response
+                    // Copy answers, authorities, and additional records from resolver's response
                     response_packet.answers.extend(resolver_response_packet.answers);
                     response_packet.authorities.extend(resolver_response_packet.authorities);
                     response_packet.resources.extend(resolver_response_packet.resources);
@@ -91,13 +90,16 @@ fn main() -> Result<()> {
                 response_packet.header.authoritative_entries = response_packet.authorities.len() as u16;
                 response_packet.header.resource_entries = response_packet.resources.len() as u16;
 
-                // Write the response back to the client
-                let mut response_buffer = BytePacketBuffer::new();
-                response_packet.write(&mut response_buffer)?;
-
-                println!("Sending response back to client at {}", src);
-                udp_socket.send_to(&response_buffer.buf[0..response_buffer.pos], src)?;
+                // Set NOERROR if everything was successful
+                response_packet.header.rescode = ResultCode::NOERROR;
             }
+
+            // Write the response back to the client
+            let mut response_buffer = BytePacketBuffer::new();
+            response_packet.write(&mut response_buffer)?;
+
+            println!("Sending response back to client at {}", src);
+            udp_socket.send_to(&response_buffer.buf[0..response_buffer.pos], src)?;
         }
     }
 }
