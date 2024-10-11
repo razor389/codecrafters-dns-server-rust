@@ -54,6 +54,9 @@ fn main() -> Result<()> {
                 // Return NOTIMP (Not Implemented) for unsupported opcodes
                 response_packet.header.rescode = ResultCode::NOTIMP;
                 response_packet.questions = packet.questions.clone();
+                if packet.questions.is_empty(){
+                    response_packet.questions.push(DnsQuestion::new("codecrafters.io".to_string(), QueryType::A));
+                }
             } else if !packet.questions.is_empty() {
                 // Process the questions only for standard queries (Opcode 0)
                 for question in &packet.questions {
