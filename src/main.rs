@@ -85,7 +85,7 @@ fn main() -> Result<()> {
                 }
 
                 // Update header with the number of responses
-                response_packet.header.questions = packet.questions.len() as u16;
+                
                 response_packet.header.answers = response_packet.answers.len() as u16;
                 response_packet.header.authoritative_entries = response_packet.authorities.len() as u16;
                 response_packet.header.resource_entries = response_packet.resources.len() as u16;
@@ -93,7 +93,7 @@ fn main() -> Result<()> {
                 // Set NOERROR if everything was successful
                 response_packet.header.rescode = ResultCode::NOERROR;
             }
-
+            response_packet.header.questions = packet.questions.len() as u16;
             // Write the response back to the client
             let mut response_buffer = BytePacketBuffer::new();
             response_packet.write(&mut response_buffer)?;
