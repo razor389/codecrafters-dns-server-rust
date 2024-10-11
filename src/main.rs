@@ -2,6 +2,7 @@ use core::str;
 use byte_packet_buffer::BytePacketBuffer;
 use header::ResultCode;
 use packet::DnsPacket;
+use query::{DnsQuestion, QueryType};
 use tokio::net::UdpSocket;
 use anyhow::Result;
 mod header;
@@ -39,6 +40,9 @@ async fn main() -> Result<()> {
         }
         if amt> 0 {
             let mut response_packet = DnsPacket::new();
+            let qname = "codecrafters.io";
+            let qtype = QueryType::A;
+
             response_packet.header.id = 1234;
             response_packet.header.response = true;
             response_packet.header.opcode = 0;
@@ -54,6 +58,8 @@ async fn main() -> Result<()> {
             response_packet.header.answers = 0;
             response_packet.header.authoritative_entries = 0;
             response_packet.header.resource_entries = 0;
+            response_packet.questions.push(DnsQuestion::new(qname.to_string(), qtype));
+            
             let mut res_buffer = BytePacketBuffer::new();
             response_packet.write(&mut res_buffer)?;
             println!("{:#?}", response_packet.header);
