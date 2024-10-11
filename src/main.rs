@@ -17,9 +17,10 @@ fn main() -> Result<()> {
     // Bind to the UDP socket at the specified address (port 2053)
     let udp_socket = UdpSocket::bind("127.0.0.1:2053").expect("Failed to bind to address");
 
-    let mut buffer = BytePacketBuffer::new();
-
+    
     loop {
+        let mut buffer = BytePacketBuffer::new();
+
         // Receive data from the socket
         let (amt, src) = udp_socket.recv_from(&mut buffer.buf)?;
         let packet = DnsPacket::from_buffer(&mut buffer)?;
