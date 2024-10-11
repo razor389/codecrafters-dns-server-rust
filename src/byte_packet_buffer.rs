@@ -59,10 +59,15 @@ impl BytePacketBuffer {
     }
 
     /// Read two bytes, stepping two steps forward
+    // pub fn read_u16(&mut self) -> Result<u16> {
+    //     let res = ((self.read()? as u16) << 8) | (self.read()? as u16);
+    //     Ok(res)
+    // }
     pub fn read_u16(&mut self) -> Result<u16> {
         let res = ((self.read()? as u16) << 8) | (self.read()? as u16);
         Ok(res)
     }
+    
 
     /// Read four bytes, stepping four steps forward
     pub fn read_u32(&mut self) -> Result<u32> {
