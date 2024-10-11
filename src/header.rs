@@ -72,6 +72,7 @@ impl DnsHeader {
     }
 
     pub fn read(&mut self, buffer: &mut BytePacketBuffer) -> Result<()> {
+        println!("Full buffer: {:02X?}", &buffer.buf);
         self.id = buffer.read_u16()?;
         let flags = buffer.read_u16()?;
         let a = (flags >> 8) as u8;
