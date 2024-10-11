@@ -57,6 +57,7 @@ fn main() -> Result<()> {
                 if packet.questions.is_empty(){
                     response_packet.questions.push(DnsQuestion::new("codecrafters.io".to_string(), QueryType::A));
                 }
+                response_packet.header.questions = 1;
             } else if !packet.questions.is_empty() {
                 // Process the questions only for standard queries (Opcode 0)
                 for question in &packet.questions {
@@ -81,7 +82,8 @@ fn main() -> Result<()> {
 
                     // Parse the resolver's response
                     let resolver_response_packet = DnsPacket::from_buffer(&mut resolver_response_buffer)?;
-
+                    
+                    response_packet.questions.extend(resolver_response_packet.questions);
                     // Copy answers, authorities, and additional records from resolver's response
                     response_packet.answers.extend(resolver_response_packet.answers);
                     response_packet.authorities.extend(resolver_response_packet.authorities);
@@ -96,8 +98,9 @@ fn main() -> Result<()> {
 
                 // Set NOERROR if everything was successful
                 response_packet.header.rescode = ResultCode::NOERROR;
+                response_packet.header.questions = packet.questions.len() as u16;
             }
-            response_packet.header.questions = packet.questions.len() as u16;
+            
             // Write the response back to the client
             let mut response_buffer = BytePacketBuffer::new();
             response_packet.write(&mut response_buffer)?;
