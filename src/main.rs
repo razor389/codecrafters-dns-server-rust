@@ -50,6 +50,7 @@ fn main() -> Result<()> {
                 response_packet.header.authed_data = packet.header.authed_data;
 
                 // Loop through all the questions
+                println!("questions: {:#?}", &packet.questions);
                 for question in &packet.questions {
                     println!("Forwarding question: {:#?} to resolver: {}", question, resolver_addr);
 
