@@ -23,7 +23,7 @@ fn main() -> Result<()> {
 
         // Receive data from the socket
         let (amt, src) = udp_socket.recv_from(&mut buffer.buf)?;
-        let packet = DnsPacket::from_buffer(&mut buffer)?;
+        let mut packet = DnsPacket::from_buffer(&mut buffer)?;
         //println!("header: {:#?}", packet.header);
 
         // for q in packet.questions {
@@ -40,7 +40,8 @@ fn main() -> Result<()> {
         // }
         if amt> 0 {
             let mut response_packet = DnsPacket::new();
-            let qname = "codecrafters.io";
+            let incoming_question = packet.questions.pop().unwrap();
+            let qname = incoming_question.name;
             let qtype = QueryType::A;
             let addr = Ipv4Addr::new(8, 8, 8, 8);
 
